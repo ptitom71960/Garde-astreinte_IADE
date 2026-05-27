@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gardes & Astr.">
+<meta name="theme-color" content="#0f1117">
+<meta name="description" content="Suivi mensuel des gardes et astreintes — calcul à la minute">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Suivi Gardes & Astreintes</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117; --surface: #181c25; --surface2: #1e2330; --border: #2a3045;
+    --accent: #4f8ef7; --accent3: #4fcf97; --danger: #f75f5f;
+    --text: #e8ecf5; --text2: #8a93aa; --text3: #5a6278; --radius: 12px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: calc(80px + var(--safe-bottom)); padding-top: var(--safe-top); }
+
+  /* PWA install banner */
+  #install-banner {
+    display: none; position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--accent); border-radius: 14px;
+    padding: 12px 18px; display: flex; align-items: center; gap: 12px; z-index: 999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5); max-width: calc(100vw - 32px);
+    animation: slideUp 0.3s ease;
+  }
+  #install-banner.hidden { display: none !important; }
+  @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+  #install-banner .ib-text { font-size: 0.85rem; color: var(--text2); }
+  #install-banner .ib-title { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+  #install-banner .btn-install { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  #install-banner .btn-dismiss { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 1.1rem; padding: 4px; }
+
+  header {
+    background: linear-gradient(135deg, #1a2035 0%, #0f1117 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 2rem; letter-spacing: -0.5px; line-height: 1; }
+  header h1 span { color: var(--accent); }
+  .month-selector { display: flex; align-items: center; gap: 10px; }
+  .month-selector label { font-size: 0.8rem; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .month-selector input[type="month"] {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 14px; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 0.95rem;
+  }
+  .month-selector input[type="month"]:focus { outline: none; border-color: var(--accent); }
+
+  .container { max-width: 1140px; margin: 0 auto; padding: 32px 24px 0; }
+
+  .section-title {
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text3);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* TAUX */
+  .taux-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 12px; margin-bottom: 32px; }
+  .taux-group-label {
+    grid-column: 1 / -1; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text3); padding: 8px 2px 2px; border-top: 1px solid var(--border); margin-top: 4px;
+  }
+  .taux-group-label:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .taux-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .taux-card .tc-label { font-size: 0.76rem; color: var(--text2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .taux-card .input-row { display: flex; align-items: center; gap: 6px; }
+  .taux-card input[type="number"] {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 10px; border-radius: 7px; font-family: 'DM Mono', monospace; font-size: 0.95rem; width: 100%;
+  }
+  .taux-card input[type="number"]:focus { outline: none; border-color: var(--accent); }
+  .taux-card .unit { font-size: 0.78rem; color: var(--text3); white-space: nowrap; }
+
+  .note {
+    font-size: 0.8rem; color: var(--text3); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 28px; display: flex; gap: 8px;
+  }
+
+  /* FORMULAIRE */
+  .add-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 12px; }
+  .form-row { display: grid; grid-template-columns: 140px 130px 1fr 1fr 110px; gap: 12px; align-items: end; margin-bottom: 14px; }
+  @media(max-width:780px){ .form-row { grid-template-columns: 1fr 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .field input, .field select {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 12px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .field select option { background: var(--surface2); }
+  .duree-preview {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--accent3);
+  }
+
+  /* SEGMENTS */
+  .segments-box {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; margin-top: 4px; display: none;
+  }
+  .seg-title { font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .seg-row { display: grid; grid-template-columns: 1fr 1fr 1fr 90px 28px; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .seg-row .field label { font-size: 0.68rem; }
+  .seg-row input, .seg-row select {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 10px; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 0.87rem;
+  }
+  .seg-row input:focus, .seg-row select:focus { outline: none; border-color: var(--accent); }
+  .seg-dur { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--accent3); }
+  .btn-seg-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 0.9rem; padding: 6px 4px; border-radius: 5px; align-self: flex-end; }
+  .btn-seg-del:hover { color: var(--danger); }
+  .btn-add-seg {
+    background: none; border: 1px dashed var(--border); color: var(--text3); padding: 7px 14px;
+    border-radius: 7px; font-size: 0.8rem; cursor: pointer; margin-top: 8px; width: 100%; transition: all 0.2s;
+  }
+  .btn-add-seg:hover { border-color: var(--accent); color: var(--accent); }
+  .seg-hint { font-size: 0.73rem; color: var(--text3); margin-top: 8px; }
+
+  .form-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+  .btn-add {
+    background: var(--accent); color: #fff; border: none; padding: 10px 28px; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s;
+  }
+  .btn-add:hover { background: #3a7de8; }
+  .btn-add:active { transform: scale(0.97); }
+
+  /* TABLE */
+  .table-wrap { border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 32px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface); border-bottom: 1px solid var(--border); }
+  thead th { padding: 12px 14px; font-size: 0.71rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); font-weight: 600; text-align: left; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(79,142,247,0.04); }
+  tbody td { padding: 11px 14px; font-size: 0.88rem; vertical-align: top; }
+  .td-mono { font-family: 'DM Mono', monospace; }
+  .td-amount { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--accent3); text-align: right; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 0.73rem; font-weight: 600; }
+  .b-garde { background: rgba(79,142,247,0.15); color: #4f8ef7; }
+  .b-astreinte { background: rgba(79,207,151,0.13); color: #4fcf97; }
+  .seg-detail { font-size: 0.77rem; color: var(--text3); margin-top: 3px; line-height: 1.7; }
+  .btn-del { background: none; border: 1px solid transparent; color: var(--text3); cursor: pointer; font-size: 0.9rem; padding: 4px 8px; border-radius: 6px; transition: all 0.15s; }
+  .btn-del:hover { color: var(--danger); border-color: rgba(247,95,95,0.3); background: rgba(247,95,95,0.08); }
+  .empty-state { padding: 48px; text-align: center; color: var(--text3); font-size: 0.9rem; }
+  .empty-state span { display: block; font-size: 2rem; margin-bottom: 10px; opacity: 0.4; }
+
+  /* TOTAUX */
+  .totaux-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .total-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 17px; }
+  .total-card .tc-label { font-size: 0.71rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; }
+  .total-card .tc-value { font-family: 'DM Mono', monospace; font-size: 1.3rem; font-weight: 500; line-height: 1; }
+  .total-card .tc-sub { font-size: 0.72rem; color: var(--text3); margin-top: 4px; }
+  .grand-total {
+    background: linear-gradient(135deg, rgba(79,142,247,0.1), rgba(79,207,151,0.07));
+    border: 1px solid rgba(79,142,247,0.28); border-radius: var(--radius);
+    padding: 22px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .gt-label { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--text2); }
+  .gt-value { font-family: 'DM Mono', monospace; font-size: 2.2rem; font-weight: 500; color: var(--accent3); letter-spacing: -1px; }
+  .gt-month { font-size: 0.78rem; color: var(--text3); }
+
+  .export-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  .btn-export {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text2);
+    padding: 9px 18px; border-radius: 8px; font-size: 0.85rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Touch-friendly inputs */
+  .field input, .field select,
+  .taux-card input[type="number"],
+  .seg-row input, .seg-row select {
+    min-height: 44px;
+  }
+  .btn-add, .btn-export, .btn-add-seg {
+    min-height: 44px;
+  }
+  .btn-del, .btn-seg-del {
+    min-width: 36px; min-height: 36px;
+  }
+
+  /* Mobile layout improvements */
+  @media(max-width: 480px) {
+    header { padding: 16px 16px 14px; }
+    header h1 { font-size: 1.45rem; }
+    .container { padding: 20px 14px 0; }
+    .form-row { grid-template-columns: 1fr 1fr; }
+    .totaux-grid { grid-template-columns: 1fr 1fr; }
+    .export-row { flex-direction: column; }
+    .export-row .btn-export { width: 100%; text-align: center; }
+    .grand-total { padding: 16px 18px; }
+    .gt-value { font-size: 1.8rem; }
+    table { font-size: 0.8rem; }
+    thead th { padding: 8px 8px; }
+    tbody td { padding: 8px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PWA Install Banner -->
+<div id="install-banner" class="hidden">
+  <div>
+    <div class="ib-title">📲 Installer l'app</div>
+    <div class="ib-text">Accès rapide depuis l'écran d'accueil</div>
+  </div>
+  <button class="btn-install" id="btn-install">Installer</button>
+  <button class="btn-dismiss" id="btn-dismiss">✕</button>
+</div>
+
+<header>
+  <div>
+    <h1>Gardes <span>&</span> Astreintes</h1>
+    <p style="font-size:0.82rem;color:var(--text3);margin-top:6px;">Suivi mensuel — calcul à la minute</p>
+  </div>
+  <div class="month-selector">
+    <label>Mois</label>
+    <input type="month" id="moisInput">
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="section-title">Taux horaires bruts (€/h)</div>
+  <div class="note">ℹ️ Saisissez vos taux une seule fois, ils sont mémorisés. Toute modification recalcule automatiquement tous les montants.</div>
+
+  <div class="taux-grid">
+    <div class="taux-group-label">── Garde — En attente (vous êtes présent mais sans activité)</div>
+    <div class="taux-card">
+      <div class="tc-label"><span class="dot" style="background:#4f8ef7"></span>Attente — Jour</div>
+      <div class="input-row"><input type="number" id="t_att_jour" value="0" min="0" step="0.01" oninput="saveTaux()"><span class="unit">€/h</span></div>
+    </div>
+    <div class="taux-card">
+      <div class="tc-label"><span class="dot" style="background:#a74ff7"></span>Attente — Nuit</div>
+      <div class="input-row"><input type="number" id="t_att_nuit" value="0" min="0" step="0.01" oninput="saveTaux()"><span class="unit">€/h</span></div>
+    </div>
+    <div class="taux-card">
+      <div class="tc-label"><span class="dot" style="background:#7b9fff"></span>Attente — Dim. / Jour férié (jour)</div>
+      <div class="input-row"><input type="number" id="t_att_djf" value="0" min="0" step="0.01" oninput="saveTaux()"><span class="unit">€/h</span></div>
+    </div>
+
+    <div class="taux-group-label">── Garde — Travaillée (vous intervenez activement)</div>
+    <div class="taux-card">
+      <div class="tc-label"><span class="dot" style="background:#f7a74f"></span>Travaillé — Jour</div>
+      <div class="input-row"><input type="number" id="t_trav_jour" value="0" min="0" step="0.01" oninput="saveTaux()"><span class="unit">€/h</span></div>
+    </div>
+    <div class="taux-card">
+      <div class="tc-label"><span class="dot" style="background:#f7dc4f"></span>Travaillé — Nuit</div>
+      <div class="input-row"><input type="number" id="t_trav_nuit" value="0" min="0" step="0.01" oninput="saveTaux()"><span class="unit">€/h</span></div>
+    </div>
+    <div class="taux-card">
+      <div class="tc-label"><span class="dot" style="background:#f75f5f"></span>Travaillé — Dim. / Jour férié</div>
+      <div class="input-row"><input type="number" id="t_trav_djf" value="0" min="0" step="0.01" oninput="saveTaux()"><span class="unit">€/h</span></div>
+    </div>
+
+    <div class="taux-group-label">── Astreinte (taux de base, payé quoi qu'il arrive)</div>
+    <div class="taux-card">
+      <div class="tc-label"><span class="dot" style="background:#4fcf97"></span>Astreinte — Taux de base</div>
+      <div class="input-row"><input type="number" id="t_astr" value="0" min="0" step="0.01" oninput="saveTaux()"><span class="unit">€/h</span></div>
+    </div>
+  </div>
+
+  <!-- FORMULAIRE -->
+  <div class="section-title">Ajouter une entrée</div>
+  <div class="add-form">
+    <div class="form-row">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="f_date">
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select id="f_typeg" onchange="onTypeChange()">
+          <option value="garde">Garde</option>
+          <option value="astreinte">Astreinte</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Heure début</label>
+        <input type="time" id="f_debut" oninput="updateDuree()">
+      </div>
+      <div class="field">
+        <label>Heure fin</label>
+        <input type="time" id="f_fin" oninput="updateDuree()">
+      </div>
+      <div class="field">
+        <label>Durée totale</label>
+        <div class="duree-preview" id="duree_preview">—</div>
+      </div>
+    </div>
+
+    <!-- Segments garde -->
+    <div id="garde_segments" class="segments-box" style="display:block">
+      <div class="seg-title">Périodes travaillées — le reste est automatiquement compté en attente</div>
+      <div id="garde_segs_list"></div>
+      <button class="btn-add-seg" onclick="addGardeSeg()">+ Ajouter une période travaillée</button>
+      <div class="seg-hint">Saisissez uniquement les moments où vous <b style="color:var(--text2)">travaillez</b>. Le temps restant sera automatiquement compté en <b style="color:var(--text2)">attente</b>. Le découpage jour (6h–21h) / nuit (21h–6h) et Dim/JF est automatique.</div>
+    </div>
+
+    <!-- Segments astreinte -->
+    <div id="astr_segments" class="segments-box">
+      <div class="seg-title">Interventions pendant l'astreinte (facultatif)</div>
+      <div id="astr_segs_list"></div>
+      <button class="btn-add-seg" onclick="addAstrSeg()">+ Ajouter une intervention</button>
+      <div class="seg-hint">Les heures d'intervention s'ajoutent au taux garde travaillé, en plus du taux astreinte de base qui couvre toute la durée.</div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-add" onclick="ajouterLigne()">+ Ajouter</button>
+    </div>
+  </div>
+
+  <!-- LISTE -->
+  <div class="section-title">Entrées du mois</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Horaire</th>
+          <th>Détail</th>
+          <th style="text-align:right">Montant</th>
+          <th style="text-align:center">↩</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- TOTAUX -->
+  <div class="section-title">Récapitulatif du mois</div>
+  <div class="totaux-grid">
+    <div class="total-card">
+      <div class="tc-label">Attente jour <span style="color:var(--text3);font-weight:400">(permanence normale)</span></div>
+      <div class="tc-value" id="tot_att_jour" style="color:#4f8ef7">0,00 €</div>
+      <div class="tc-sub" id="h_att_jour">0 h 00</div>
+    </div>
+    <div class="total-card">
+      <div class="tc-label">Attente nuit <span style="color:var(--text3);font-weight:400">(permanence nuit)</span></div>
+      <div class="tc-value" id="tot_att_nuit" style="color:#a74ff7">0,00 €</div>
+      <div class="tc-sub" id="h_att_nuit">0 h 00</div>
+    </div>
+    <div class="total-card">
+      <div class="tc-label">Attente dim./JF <span style="color:var(--text3);font-weight:400">(permanence dim./JF)</span></div>
+      <div class="tc-value" id="tot_att_djf" style="color:#7b9fff">0,00 €</div>
+      <div class="tc-sub" id="h_att_djf">0 h 00</div>
+    </div>
+    <div class="total-card">
+      <div class="tc-label">Travaillé jour <span style="color:var(--text3);font-weight:400">(intervention astreinte)</span></div>
+      <div class="tc-value" id="tot_trav_jour" style="color:#f7a74f">0,00 €</div>
+      <div class="tc-sub" id="h_trav_jour">0 h 00</div>
+    </div>
+    <div class="total-card">
+      <div class="tc-label">Travaillé nuit <span style="color:var(--text3);font-weight:400">(intervention nuit)</span></div>
+      <div class="tc-value" id="tot_trav_nuit" style="color:#f7dc4f">0,00 €</div>
+      <div class="tc-sub" id="h_trav_nuit">0 h 00</div>
+    </div>
+    <div class="total-card">
+      <div class="tc-label">Travaillé dim./JF <span style="color:var(--text3);font-weight:400">(intervention dim./JF)</span></div>
+      <div class="tc-value" id="tot_trav_djf" style="color:#f75f5f">0,00 €</div>
+      <div class="tc-sub" id="h_trav_djf">0 h 00</div>
+    </div>
+    <div class="total-card">
+      <div class="tc-label">Astreinte (base) <span style="color:var(--text3);font-weight:400">(astreinte majorée)</span></div>
+      <div class="tc-value" id="tot_astr" style="color:#4fcf97">0,00 €</div>
+      <div class="tc-sub" id="h_astr">0 h 00</div>
+    </div>
+  </div>
+
+  <div class="grand-total">
+    <div>
+      <div class="gt-label">Total brut du mois</div>
+      <div class="gt-month" id="gt_month_label">—</div>
+    </div>
+    <div class="gt-value" id="grand_total">0,00 €</div>
+  </div>
+
+  <div class="export-row">
+    <button class="btn-export" onclick="exportCSV()">⬇ Exporter CSV</button>
+    <button class="btn-export" onclick="window.print()">🖨 Imprimer</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'gardes_v2';
+const TAUX_KEY    = 'gardes_taux_v2';
+const TAUX_IDS    = ['att_jour','att_nuit','att_djf','trav_jour','trav_nuit','trav_djf','astr'];
+const TAUX_LABELS = { att_jour:'Attente jour', att_nuit:'Attente nuit', att_djf:'Attente dim./JF', trav_jour:'Travaillé jour', trav_nuit:'Travaillé nuit', trav_djf:'Travaillé dim./JF', astr:'Astreinte base' };
+const TAUX_COLORS = { att_jour:'#4f8ef7', att_nuit:'#a74ff7', att_djf:'#7b9fff', trav_jour:'#f7a74f', trav_nuit:'#f7dc4f', trav_djf:'#f75f5f', astr:'#4fcf97' };
+
+let data = {};
+try { const s = localStorage.getItem(STORAGE_KEY); if(s) data = JSON.parse(s); } catch(e){}
+
+const today = new Date();
+document.getElementById('moisInput').value = today.toISOString().slice(0,7);
+document.getElementById('f_date').value    = today.toISOString().slice(0,10);
+
+try {
+  const t = JSON.parse(localStorage.getItem(TAUX_KEY)||'{}');
+  TAUX_IDS.forEach(k => { if(t[k]!==undefined) document.getElementById('t_'+k).value = t[k]; });
+} catch(e){}
+
+function saveTaux() {
+  const t = {};
+  TAUX_IDS.forEach(k => t[k] = parseFloat(document.getElementById('t_'+k).value)||0);
+  localStorage.setItem(TAUX_KEY, JSON.stringify(t));
+  recalcAll();
+}
+function getTaux(k) { return parseFloat(document.getElementById('t_'+k).value)||0; }
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+// ── Temps ──
+function parseMin(s) { if(!s) return null; const [h,m]=s.split(':').map(Number); return h*60+m; }
+function minutesBetween(d,f) {
+  let dm=parseMin(d), fm=parseMin(f);
+  if(dm===null||fm===null) return 0;
+  if(fm<=dm) fm+=1440;
+  return fm-dm;
+}
+function minToHHMM(m) { return Math.floor(Math.abs(m)/60)+'h '+String(Math.abs(m)%60).padStart(2,'0'); }
+function formatEur(n) { return n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
+function formatDate(s) { if(!s) return ''; const [y,mo,j]=s.split('-'); return j+'/'+mo+'/'+y; }
+
+function updateDuree() {
+  const m = minutesBetween(document.getElementById('f_debut').value, document.getElementById('f_fin').value);
+  document.getElementById('duree_preview').textContent = m>0 ? minToHHMM(m) : '—';
+}
+
+function onTypeChange() {
+  const t = document.getElementById('f_typeg').value;
+  document.getElementById('garde_segments').style.display   = t==='garde'     ? 'block' : 'none';
+  document.getElementById('astr_segments').style.display    = t==='astreinte' ? 'block' : 'none';
+}
+
+// ── Segments ──
+let gardeSegs = [];
+let astrSegs  = [];
+
+// ── Jours fériés français ──
+function joursFeriesAnnee(annee) {
+  // Calcul de Pâques (algorithme de Meeus/Jones/Butcher)
+  const a=annee%19, b=Math.floor(annee/100), c=annee%100;
+  const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const mois=Math.floor((h+l-7*m+114)/31);
+  const jour=(h+l-7*m+114)%31+1;
+  const paques = new Date(annee, mois-1, jour);
+
+  const jf = new Set();
+  const ajoute = (m,j) => jf.add(`${annee}-${String(m).padStart(2,'0')}-${String(j).padStart(2,'0')}`);
+  // Fixes
+  ajoute(1,1); ajoute(5,1); ajoute(5,8); ajoute(7,14);
+  ajoute(8,15); ajoute(11,1); ajoute(11,11); ajoute(12,25);
+  // Variables (basés sur Pâques)
+  const add = (d,n) => { const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt; };
+  [1, 39, 50, 60].forEach(n => {
+    const dt = add(paques, n);
+    ajoute(dt.getMonth()+1, dt.getDate());
+  });
+  return jf;
+}
+
+// Cache des jours fériés par année
+const feriesCache = {};
+function isFerie(dateStr) {
+  const annee = parseInt(dateStr.slice(0,4));
+  if(!feriesCache[annee]) feriesCache[annee] = joursFeriesAnnee(annee);
+  return feriesCache[annee].has(dateStr);
+}
+
+function isDimancheOuFerie(dateStr) {
+  const d = new Date(dateStr+'T12:00:00');
+  return d.getDay()===0 || isFerie(dateStr);
+}
+
+// Retourne la date réelle (string YYYY-MM-DD) pour une minute absolue
+// à partir d'une date de départ et du début en minutes
+function dateReelleDeMinute(dateDepart, debutMin, minuteAbs) {
+  const [y,m,j] = dateDepart.split('-').map(Number);
+  const baseDate = new Date(y, m-1, j);
+  // Décalage en jours complets depuis minuit du jour de départ
+  const minuteDepuisMinuit = minuteAbs; // déjà en absolu depuis minuit du jour de départ
+  const joursSupp = Math.floor(minuteAbs / 1440);
+  const dt = new Date(baseDate);
+  dt.setDate(dt.getDate() + joursSupp);
+  return dt.toISOString().slice(0,10);
+}
+
+// ── Découpage automatique jour/nuit avec dim/JF par date réelle ──
+// dateDepart : YYYY-MM-DD (date du début de garde/astreinte)
+// debutMin, finMin : minutes absolues depuis minuit du dateDepart (finMin peut > 1440)
+// statut : 'travaille' | 'attente'
+// Retourne [{taux, min, hDeb, hFin}]
+function decoupeAvecDate(dateDepart, debutMin, finMin, statut) {
+  if(finMin <= debutMin) return [];
+  const result = [];
+  // Bornes : changements jour/nuit (6h, 21h) ET minuits (changement de date)
+  const bornes = new Set([debutMin, finMin]);
+  for(let jour=0; jour<=3; jour++){
+    [0, 6*60, 21*60].forEach(h => {
+      const b = jour*1440 + h;
+      if(b > debutMin && b < finMin) bornes.add(b);
+    });
+  }
+  const bornesTriees = Array.from(bornes).sort((a,b)=>a-b);
+
+  for(let i=0; i<bornesTriees.length-1; i++){
+    const segDeb = bornesTriees[i];
+    const segFin = bornesTriees[i+1];
+    const milieu = (segDeb + segFin) / 2;
+    const heureLocale = milieu % 1440;
+    const isNuit = heureLocale < 6*60 || heureLocale >= 21*60;
+    // Date réelle : nombre de jours écoulés depuis minuit du dateDepart
+    // milieu est en minutes depuis minuit du dateDepart, donc joursSupp = floor(milieu/1440)
+    const joursSupp = Math.floor(milieu / 1440);
+    const [y,m,j] = dateDepart.split('-').map(Number);
+    const dt = new Date(y, m-1, j + joursSupp);
+    const dateStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+    const djf = isDimancheOuFerie(dateStr);
+
+    let taux;
+    if(isNuit) {
+      taux = statut==='travaille' ? 'trav_nuit' : 'att_nuit';
+    } else if(djf) {
+      taux = statut==='travaille' ? 'trav_djf' : 'att_djf';
+    } else {
+      taux = statut==='travaille' ? 'trav_jour' : 'att_jour';
+    }
+    const min = segFin - segDeb;
+    const hDeb = String(Math.floor(segDeb%1440/60)).padStart(2,'0')+':'+String(segDeb%60).padStart(2,'0');
+    const hFin = String(Math.floor(segFin%1440/60)).padStart(2,'0')+':'+String(segFin%60).padStart(2,'0');
+    result.push({taux, min, hDeb, hFin, dateStr});
+  }
+  // Fusionner les tranches consécutives avec le même taux
+  const fusionne = [];
+  for(const t of result){
+    const last = fusionne[fusionne.length-1];
+    if(last && last.taux===t.taux && last.hFin===t.hDeb){
+      last.min += t.min;
+      last.hFin = t.hFin;
+    } else {
+      fusionne.push({...t});
+    }
+  }
+  return fusionne;
+}
+
+// Convertit heure "HH:MM" + offset de départ en minutes absolues
+function heureVersAbsolu(debutGardeMin, heureStr) {
+  let m = parseMin(heureStr);
+  if(m < debutGardeMin % 1440) m += 1440; // lendemain
+  // Ajuster si la garde commence après minuit (ex: garde de J+0 22h à J+1 8h)
+  // debutGardeMin peut être > 1440 si on a déjà décalé
+  const base = debutGardeMin - (debutGardeMin % 1440);
+  m += base;
+  if(m < debutGardeMin) m += 1440;
+  return m;
+}
+
+function renderGardeSegs() {
+  const dateGarde = document.getElementById('f_date').value;
+  const debutGarde = document.getElementById('f_debut').value;
+  const gdMin = parseMin(debutGarde)||0;
+  document.getElementById('garde_segs_list').innerHTML = gardeSegs.map((s,i)=>{
+    let tranches = [];
+    if(s.debut&&s.fin&&dateGarde){
+      const dAbs = heureVersAbsolu(gdMin, s.debut);
+      let fAbs = heureVersAbsolu(gdMin, s.fin);
+      if(fAbs<=dAbs) fAbs+=1440;
+      tranches = decoupeAvecDate(dateGarde, dAbs, fAbs, 'travaille');
+    }
+    const preview = tranches.map(t=>`<span style="color:${TAUX_COLORS[t.taux]}">${t.hDeb}→${t.hFin} ${TAUX_LABELS[t.taux]} (${minToHHMM(t.min)})</span>`).join(' · ');
+    return `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:${preview?'10px':'0'}">
+        <div class="field"><label>Début travail</label><input type="time" value="${s.debut}" oninput="gardeSegs[${i}].debut=this.value;renderGardeSegs()"></div>
+        <div class="field"><label>Fin travail</label><input type="time" value="${s.fin}" oninput="gardeSegs[${i}].fin=this.value;renderGardeSegs()"></div>
+        <div class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:9px;">
+          <button class="btn-seg-del" onclick="gardeSegs.splice(${i},1);renderGardeSegs()">✕</button>
+        </div>
+      </div>
+      ${preview ? `<div style="font-size:0.75rem;line-height:1.8;padding-top:6px;border-top:1px solid var(--border)">${preview}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function addGardeSeg() { gardeSegs.push({debut:'',fin:''}); renderGardeSegs(); }
+
+function renderAstrSegs() {
+  const dateAstr = document.getElementById('f_date').value;
+  const debutAstr = document.getElementById('f_debut').value;
+  const gdMin = parseMin(debutAstr)||0;
+  document.getElementById('astr_segs_list').innerHTML = astrSegs.map((s,i)=>{
+    let tranches = [];
+    if(s.debut&&s.fin&&dateAstr){
+      const dAbs = heureVersAbsolu(gdMin, s.debut);
+      let fAbs = heureVersAbsolu(gdMin, s.fin);
+      if(fAbs<=dAbs) fAbs+=1440;
+      tranches = decoupeAvecDate(dateAstr, dAbs, fAbs, 'travaille');
+    }
+    const preview = tranches.map(t=>`<span style="color:${TAUX_COLORS[t.taux]}">${t.hDeb}→${t.hFin} ${TAUX_LABELS[t.taux]} (${minToHHMM(t.min)})</span>`).join(' · ');
+    return `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:${preview?'10px':'0'}">
+        <div class="field"><label>Début intervention</label><input type="time" value="${s.debut}" oninput="astrSegs[${i}].debut=this.value;renderAstrSegs()"></div>
+        <div class="field"><label>Fin intervention</label><input type="time" value="${s.fin}" oninput="astrSegs[${i}].fin=this.value;renderAstrSegs()"></div>
+        <div class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:9px;">
+          <button class="btn-seg-del" onclick="astrSegs.splice(${i},1);renderAstrSegs()">✕</button>
+        </div>
+      </div>
+      ${preview ? `<div style="font-size:0.75rem;line-height:1.8;padding-top:6px;border-top:1px solid var(--border)">${preview}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function addAstrSeg() { astrSegs.push({debut:'',fin:''}); renderAstrSegs(); }
+
+function refreshSegDur(type, i) {
+  // Utilisé uniquement pour les astreintes
+  const s = astrSegs[i];
+  const el = document.getElementById('adur_'+i);
+  if(el) el.textContent = s.debut&&s.fin ? minToHHMM(minutesBetween(s.debut,s.fin)) : '—';
+}
+
+function calcAttenteAuto(debutGarde, finGarde, segsTravaill) {
+  let gd = parseMin(debutGarde), gf = parseMin(finGarde);
+  if(gf<=gd) gf+=1440;
+  const travailles = segsTravaill
+    .filter(s=>s.debut&&s.fin)
+    .map(s=>{
+      let d=heureVersAbsolu(gd, s.debut), f=heureVersAbsolu(gd, s.fin);
+      if(f<=d) f+=1440;
+      return {d,f};
+    })
+    .sort((a,b)=>a.d-b.d);
+  const attentes = [];
+  let cursor = gd;
+  for(const t of travailles){
+    if(t.d > cursor) attentes.push({d:cursor, f:t.d});
+    cursor = Math.max(cursor, t.f);
+  }
+  if(cursor < gf) attentes.push({d:cursor, f:gf});
+  return attentes;
+}
+
+function calcEntree(e) {
+  let total = 0;
+  const gd = parseMin(e.debut);
+  if(e.typeg==='garde') {
+    e.segments.forEach(s => {
+      if(!s.debut||!s.fin) return;
+      const dAbs = heureVersAbsolu(gd, s.debut);
+      let fAbs = heureVersAbsolu(gd, s.fin);
+      if(fAbs<=dAbs) fAbs+=1440;
+      decoupeAvecDate(e.date, dAbs, fAbs, 'travaille').forEach(t => total += (t.min/60)*getTaux(t.taux));
+    });
+    calcAttenteAuto(e.debut, e.fin, e.segments).forEach(a => {
+      decoupeAvecDate(e.date, a.d, a.f, 'attente').forEach(t => total += (t.min/60)*getTaux(t.taux));
+    });
+  } else {
+    const totalMin = minutesBetween(e.debut, e.fin);
+    total += (totalMin/60)*getTaux('astr');
+    e.segments.forEach(s => {
+      if(!s.debut||!s.fin) return;
+      const dAbs = heureVersAbsolu(gd, s.debut);
+      let fAbs = heureVersAbsolu(gd, s.fin);
+      if(fAbs<=dAbs) fAbs+=1440;
+      decoupeAvecDate(e.date, dAbs, fAbs, 'travaille').forEach(t => total += (t.min/60)*getTaux(t.taux));
+    });
+  }
+  return total;
+}
+
+// ── Ajouter ──
+function ajouterLigne() {
+  const mois  = document.getElementById('moisInput').value;
+  const date  = document.getElementById('f_date').value;
+  const typeg = document.getElementById('f_typeg').value;
+  const debut = document.getElementById('f_debut').value;
+  const fin   = document.getElementById('f_fin').value;
+
+  if(!date) { alert('Veuillez choisir une date.'); return; }
+  if(!debut||!fin) { alert('Veuillez saisir une heure de début et de fin.'); return; }
+
+  const segs = typeg==='garde' ? gardeSegs.map(s=>({...s})) : astrSegs.map(s=>({...s}));
+  const e = { id: Date.now().toString(), date, typeg, debut, fin, segments: segs };
+  e.montant = calcEntree(e);
+
+  if(!data[mois]) data[mois]=[];
+  data[mois].push(e);
+  saveData(); renderTable(); renderTotaux();
+
+  document.getElementById('f_debut').value='';
+  document.getElementById('f_fin').value='';
+  document.getElementById('duree_preview').textContent='—';
+  gardeSegs=[]; astrSegs=[];
+  renderGardeSegs(); renderAstrSegs();
+  document.getElementById('garde_segments').style.display='block';
+  document.getElementById('astr_segments').style.display='none';
+  document.getElementById('f_typeg').value='garde';
+}
+
+function supprimer(id) {
+  const mois = document.getElementById('moisInput').value;
+  if(!confirm('Supprimer cette entrée ?')) return;
+  data[mois]=(data[mois]||[]).filter(l=>l.id!==id);
+  saveData(); renderTable(); renderTotaux();
+}
+
+function recalcAll() {
+  Object.keys(data).forEach(mois => data[mois].forEach(e => e.montant=calcEntree(e)));
+  saveData(); renderTable(); renderTotaux();
+}
+
+const JOURS_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+function labelDate(dateStr) {
+  const [y,m,j] = dateStr.split('-').map(Number);
+  const d = new Date(y, m-1, j);
+  const nomJour = JOURS_FR[d.getDay()];
+  const ferie = isFerie(dateStr) ? ' <span style="color:var(--danger);font-size:0.72rem">(Jour férié)</span>' : '';
+  return `${formatDate(dateStr)}<br><small style="color:var(--text3)">${nomJour}${ferie}</small>`;
+}
+
+// ── Render table ──
+function renderTable() {
+  const mois = document.getElementById('moisInput').value;
+  const lignes = (data[mois]||[]).slice().sort((a,b)=>a.date<b.date?-1:1);
+  const tbody  = document.getElementById('tbody');
+  if(!lignes.length) {
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><span>📋</span>Aucune entrée pour ce mois.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = lignes.map(l=>{
+    const badge = l.typeg==='garde' ? '<span class="badge b-garde">Garde</span>' : '<span class="badge b-astreinte">Astreinte</span>';
+    const horaire = `<span class="td-mono">${l.debut} → ${l.fin}</span><br><small style="color:var(--text3)">${minToHHMM(minutesBetween(l.debut,l.fin))}</small>`;
+    const gd = parseMin(l.debut);
+    let detail='';
+    if(l.typeg==='garde') {
+      if(l.segments.length>0) {
+        l.segments.forEach(s=>{
+          if(!s.debut||!s.fin) return;
+          const dAbs=heureVersAbsolu(gd,s.debut); let fAbs=heureVersAbsolu(gd,s.fin); if(fAbs<=dAbs) fAbs+=1440;
+          const tranches=decoupeAvecDate(l.date,dAbs,fAbs,'travaille');
+          detail+=`<div class="seg-detail" style="margin-bottom:2px"><b style="color:var(--text2)">${s.debut}→${s.fin} Travaillé</b></div>`;
+          tranches.forEach(t=>{ detail+=`<div class="seg-detail" style="padding-left:10px">↳ ${t.hDeb}→${t.hFin} <span style="color:${TAUX_COLORS[t.taux]}">${TAUX_LABELS[t.taux]}</span> · ${minToHHMM(t.min)} · ${formatEur((t.min/60)*getTaux(t.taux))}</div>`; });
+        });
+      }
+      const attentes=calcAttenteAuto(l.debut,l.fin,l.segments);
+      if(attentes.length>0){
+        detail+=`<div class="seg-detail" style="margin-bottom:2px;margin-top:4px"><b style="color:var(--text3)">Attente (automatique)</b></div>`;
+        attentes.forEach(a=>{
+          decoupeAvecDate(l.date,a.d,a.f,'attente').forEach(t=>{
+            detail+=`<div class="seg-detail" style="padding-left:10px">↳ ${t.hDeb}→${t.hFin} <span style="color:${TAUX_COLORS[t.taux]}">${TAUX_LABELS[t.taux]}</span> · ${minToHHMM(t.min)} · ${formatEur((t.min/60)*getTaux(t.taux))}</div>`;
+          });
+        });
+      }
+    } else {
+      const totalMin=minutesBetween(l.debut,l.fin);
+      detail=`<div class="seg-detail">Base astreinte (durée totale) : <span style="color:${TAUX_COLORS.astr}">${minToHHMM(totalMin)}</span> · ${formatEur((totalMin/60)*getTaux('astr'))}</div>`;
+      l.segments.forEach(s=>{
+        if(!s.debut||!s.fin) return;
+        const dAbs=heureVersAbsolu(gd,s.debut); let fAbs=heureVersAbsolu(gd,s.fin); if(fAbs<=dAbs) fAbs+=1440;
+        const tranches=decoupeAvecDate(l.date,dAbs,fAbs,'travaille');
+        detail+=`<div class="seg-detail" style="margin-top:4px"><b style="color:var(--text2)">+ Interv. ${s.debut}→${s.fin}</b></div>`;
+        tranches.forEach(t=>{ detail+=`<div class="seg-detail" style="padding-left:10px">↳ ${t.hDeb}→${t.hFin} <span style="color:${TAUX_COLORS[t.taux]}">${TAUX_LABELS[t.taux]}</span> · ${minToHHMM(t.min)} · ${formatEur((t.min/60)*getTaux(t.taux))}</div>`; });
+      });
+    }
+    return `<tr>
+      <td class="td-mono">${labelDate(l.date)}</td>
+      <td>${badge}</td>
+      <td>${horaire}</td>
+      <td>${detail}</td>
+      <td class="td-amount">${formatEur(l.montant)}</td>
+      <td style="text-align:center"><button class="btn-del" onclick="supprimer('${l.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Render totaux ──
+function renderTotaux() {
+  const mois  = document.getElementById('moisInput').value;
+  const lignes = data[mois]||[];
+  const mins={}, amts={};
+  TAUX_IDS.forEach(k=>{ mins[k]=0; amts[k]=0; });
+
+  lignes.forEach(l=>{
+    const gd=parseMin(l.debut);
+    if(l.typeg==='garde') {
+      l.segments.forEach(s=>{
+        if(!s.debut||!s.fin) return;
+        const dAbs=heureVersAbsolu(gd,s.debut); let fAbs=heureVersAbsolu(gd,s.fin); if(fAbs<=dAbs) fAbs+=1440;
+        decoupeAvecDate(l.date,dAbs,fAbs,'travaille').forEach(t=>{ mins[t.taux]+=t.min; amts[t.taux]+=(t.min/60)*getTaux(t.taux); });
+      });
+      calcAttenteAuto(l.debut,l.fin,l.segments).forEach(a=>{
+        decoupeAvecDate(l.date,a.d,a.f,'attente').forEach(t=>{ mins[t.taux]+=t.min; amts[t.taux]+=(t.min/60)*getTaux(t.taux); });
+      });
+    } else {
+      const totalMin=minutesBetween(l.debut,l.fin);
+      mins.astr+=totalMin; amts.astr+=(totalMin/60)*getTaux('astr');
+      l.segments.forEach(s=>{
+        if(!s.debut||!s.fin) return;
+        const dAbs=heureVersAbsolu(gd,s.debut); let fAbs=heureVersAbsolu(gd,s.fin); if(fAbs<=dAbs) fAbs+=1440;
+        decoupeAvecDate(l.date,dAbs,fAbs,'travaille').forEach(t=>{ mins[t.taux]+=t.min; amts[t.taux]+=(t.min/60)*getTaux(t.taux); });
+      });
+    }
+  });
+
+  TAUX_IDS.forEach(k=>{
+    document.getElementById('tot_'+k).textContent=formatEur(amts[k]);
+    document.getElementById('h_'+k).textContent=minToHHMM(mins[k]);
+  });
+  document.getElementById('grand_total').textContent=formatEur(Object.values(amts).reduce((a,b)=>a+b,0));
+  const [y,m]=mois.split('-');
+  const nom=new Date(y,m-1,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  document.getElementById('gt_month_label').textContent=nom.charAt(0).toUpperCase()+nom.slice(1);
+}
+
+// ── Export CSV ──
+function exportCSV() {
+  const mois=document.getElementById('moisInput').value;
+  const lignes=(data[mois]||[]).slice().sort((a,b)=>a.date<b.date?-1:1);
+  let csv='Date;Jour;Type;Début;Fin;Durée totale;Segment;Début seg.;Fin seg.;Durée seg.;Taux;Montant (€)\n';
+  lignes.forEach(l=>{
+    const tot=minutesBetween(l.debut,l.fin);
+    const gd=parseMin(l.debut);
+    const [yy,mm,jj]=l.date.split('-').map(Number);
+    const nomJ=JOURS_FR[new Date(yy,mm-1,jj).getDay()];
+    const ferieLabel=isFerie(l.date)?'(JF)':'';
+    if(l.typeg==='garde'){
+      l.segments.forEach((s,i)=>{
+        if(!s.debut||!s.fin) return;
+        const dAbs=heureVersAbsolu(gd,s.debut); let fAbs=heureVersAbsolu(gd,s.fin); if(fAbs<=dAbs) fAbs+=1440;
+        decoupeAvecDate(l.date,dAbs,fAbs,'travaille').forEach(t=>{
+          csv+=`${formatDate(l.date)};${nomJ} ${ferieLabel};Garde;${l.debut};${l.fin};${minToHHMM(tot)};Travaillé;${t.hDeb};${t.hFin};${minToHHMM(t.min)};${TAUX_LABELS[t.taux]};${((t.min/60)*getTaux(t.taux)).toFixed(2)}\n`;
+        });
+      });
+      calcAttenteAuto(l.debut,l.fin,l.segments).forEach(a=>{
+        decoupeAvecDate(l.date,a.d,a.f,'attente').forEach(t=>{
+          csv+=`${formatDate(l.date)};${nomJ} ${ferieLabel};Garde;${l.debut};${l.fin};${minToHHMM(tot)};Attente auto;${t.hDeb};${t.hFin};${minToHHMM(t.min)};${TAUX_LABELS[t.taux]};${((t.min/60)*getTaux(t.taux)).toFixed(2)}\n`;
+        });
+      });
+    } else {
+      csv+=`${formatDate(l.date)};${nomJ} ${ferieLabel};Astreinte;${l.debut};${l.fin};${minToHHMM(tot)};Base (totale);${l.debut};${l.fin};${minToHHMM(tot)};${TAUX_LABELS.astr};${((tot/60)*getTaux('astr')).toFixed(2)}\n`;
+      l.segments.forEach((s,i)=>{
+        if(!s.debut||!s.fin) return;
+        const dAbs=heureVersAbsolu(gd,s.debut); let fAbs=heureVersAbsolu(gd,s.fin); if(fAbs<=dAbs) fAbs+=1440;
+        decoupeAvecDate(l.date,dAbs,fAbs,'travaille').forEach(t=>{
+          csv+=`${formatDate(l.date)};${nomJ} ${ferieLabel};Astreinte;${l.debut};${l.fin};${minToHHMM(tot)};Interv.${i+1};${t.hDeb};${t.hFin};${minToHHMM(t.min)};${TAUX_LABELS[t.taux]};${((t.min/60)*getTaux(t.taux)).toFixed(2)}\n`;
+        });
+      });
+    }
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`gardes_${mois}.csv`; a.click();
+}
+
+document.getElementById('moisInput').addEventListener('change',()=>{ renderTable(); renderTotaux(); });
+renderGardeSegs(); renderAstrSegs(); renderTable(); renderTotaux();
+
+// ── PWA ──
+let deferredPrompt = null;
+const banner = document.getElementById('install-banner');
+const btnInstall = document.getElementById('btn-install');
+const btnDismiss = document.getElementById('btn-dismiss');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  banner.classList.remove('hidden');
+  banner.style.display = 'flex';
+});
+
+btnInstall && btnInstall.addEventListener('click', async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  banner.style.display = 'none';
+});
+
+btnDismiss && btnDismiss.addEventListener('click', () => {
+  banner.style.display = 'none';
+});
+
+window.addEventListener('appinstalled', () => {
+  banner.style.display = 'none';
+  deferredPrompt = null;
+});
+
+// Service Worker inline (enregistre sw.js s'il existe, sinon mode dégradé)
+if('serviceWorker' in navigator) {
+  // On injecte le SW directement via un blob URL pour un fichier unique
+  const swCode = `
+const CACHE = 'gardes-v1';
+const ASSETS = [self.location.href.replace('/sw-blob.js','')];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  if(e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+    const clone = res.clone();
+    caches.open(CACHE).then(c => c.put(e.request, clone));
+    return res;
+  }).catch(() => caches.match(e.request))));
+});`;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, {scope: '/'}).catch(()=>{});
+}
+</script>
+</body>
+</html>
