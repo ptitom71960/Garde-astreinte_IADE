@@ -2,7 +2,7 @@
   "name": "Suivi Gardes & Astreintes",
   "short_name": "Gardes & Astr.",
   "description": "Suivi mensuel des gardes et astreintes — calcul à la minute",
-  "start_url": "./gardes_astreintes_V9.html",
+  "start_url": "/Garde-astreinte_IADE/gardes_astreintes_V9_mobile.html",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#0f1117",
