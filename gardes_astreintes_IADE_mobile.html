@@ -386,9 +386,12 @@
   </div>
 
   <div class="export-row">
+    <button class="btn-export" onclick="exportSauvegarde()">Exporter sauvegarde</button>
+    <button class="btn-export" onclick="document.getElementById('backup_file').click()">Importer sauvegarde</button>
     <button class="btn-export" onclick="exportCSV()">⬇ Exporter CSV</button>
     <button class="btn-export" onclick="window.print()">🖨 Imprimer</button>
   </div>
+  <input type="file" id="backup_file" accept=".json,application/json" style="display:none" onchange="importSauvegarde(this)">
 </div>
 
 <script>
@@ -418,6 +421,53 @@ function saveTaux() {
 }
 function getTaux(k) { return parseFloat(document.getElementById('t_'+k).value)||0; }
 function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function exportSauvegarde() {
+  const sauvegarde = {
+    app: 'gardes_astreintes',
+    version: 1,
+    dateExport: new Date().toISOString(),
+    data,
+    taux: JSON.parse(localStorage.getItem(TAUX_KEY)||'{}')
+  };
+  const blob = new Blob([JSON.stringify(sauvegarde, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  const jour = new Date().toISOString().slice(0,10);
+  a.href = URL.createObjectURL(blob);
+  a.download = `sauvegarde_gardes_astreintes_${jour}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importSauvegarde(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const sauvegarde = JSON.parse(reader.result);
+      if(!sauvegarde || typeof sauvegarde !== 'object') throw new Error('Format invalide');
+      if(!confirm('Importer cette sauvegarde ? Les donnees actuellement visibles seront remplacees.')) return;
+
+      data = sauvegarde.data && typeof sauvegarde.data === 'object' ? sauvegarde.data : sauvegarde;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+      if(sauvegarde.taux && typeof sauvegarde.taux === 'object') {
+        localStorage.setItem(TAUX_KEY, JSON.stringify(sauvegarde.taux));
+        TAUX_IDS.forEach(k => {
+          if(sauvegarde.taux[k] !== undefined) document.getElementById('t_'+k).value = sauvegarde.taux[k];
+        });
+      }
+
+      recalcAll();
+      alert('Sauvegarde importee avec succes.');
+    } catch(e) {
+      alert('Impossible d importer cette sauvegarde. Verifiez que le fichier choisi est le bon.');
+    }
+  };
+  reader.readAsText(file);
+}
 
 // ── Temps ──
 function parseMin(s) { if(!s) return null; const [h,m]=s.split(':').map(Number); return h*60+m; }
