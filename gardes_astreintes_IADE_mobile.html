@@ -189,6 +189,79 @@
   }
 
   /* Mobile layout improvements */
+  @media(max-width: 640px) {
+    .table-wrap {
+      border: none;
+      border-radius: 0;
+      overflow: visible;
+      margin-bottom: 28px;
+    }
+    table, thead, tbody, tr, td {
+      display: block;
+      width: 100%;
+    }
+    thead {
+      display: none;
+    }
+    tbody tr {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+    }
+    tbody tr:hover {
+      background: var(--surface);
+    }
+    tbody td {
+      border-bottom: 1px solid rgba(42,48,69,0.7);
+      padding: 9px 0;
+      font-size: 0.88rem;
+    }
+    tbody td:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    tbody td::before {
+      display: block;
+      color: var(--text3);
+      content: "";
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    tbody td:nth-child(1)::before { content: "Date"; }
+    tbody td:nth-child(2)::before { content: "Type"; }
+    tbody td:nth-child(3)::before { content: "Horaire"; }
+    tbody td:nth-child(4)::before { content: "Detail"; }
+    tbody td:nth-child(5)::before { content: "Montant"; }
+    tbody td:nth-child(6)::before { content: "Action"; }
+    tbody td[colspan]::before {
+      content: "";
+      display: none;
+    }
+    .td-amount {
+      text-align: left;
+      font-size: 1.05rem;
+    }
+    .seg-detail {
+      font-size: 0.8rem;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+    .btn-del {
+      width: 100%;
+      min-height: 40px;
+      border-color: rgba(247,95,95,0.28);
+      color: var(--danger);
+    }
+    .empty-state {
+      padding: 28px 12px;
+    }
+  }
+
   @media(max-width: 480px) {
     header { padding: 16px 16px 14px; }
     header h1 { font-size: 1.45rem; }
@@ -199,9 +272,6 @@
     .export-row .btn-export { width: 100%; text-align: center; }
     .grand-total { padding: 16px 18px; }
     .gt-value { font-size: 1.8rem; }
-    table { font-size: 0.8rem; }
-    thead th { padding: 8px 8px; }
-    tbody td { padding: 8px 8px; }
   }
 </style>
 </head>
