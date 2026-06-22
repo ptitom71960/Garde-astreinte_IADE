@@ -1,5 +1,5 @@
 // Service worker — Gardes & Astreintes (IADE / IBODE)
-const CACHE = 'gardes-astreintes-v1';
+const CACHE = 'gardes-astreintes-v2';
 const ASSETS = [
   './', './index.html',
   './gardes_astreintes_IADE.html', './gardes_astreintes_IBODE.html',
