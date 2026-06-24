@@ -124,6 +124,16 @@
     .card { padding: 22px 20px; }
     .card-arrow { display: none; }
   }
+
+  .install-help { width:100%; max-width:480px; padding:0 20px; margin-top:44px; }
+  .ih-title { font-family:'DM Serif Display',serif; font-size:1.3rem; text-align:center; margin-bottom:18px; color:var(--text); }
+  .ih-grid { display:flex; flex-direction:column; gap:14px; }
+  .ih-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; }
+  .ih-os { font-weight:600; font-size:0.98rem; margin-bottom:10px; color:var(--text); display:flex; align-items:center; gap:8px; }
+  .ih-card ol { margin:0; padding-left:1.25em; }
+  .ih-card li { font-size:0.85rem; color:var(--text2); line-height:1.75; margin-bottom:5px; }
+  .ih-card b { color:var(--text); font-weight:600; }
+  .ih-note { font-size:0.78rem; color:var(--text3); text-align:center; margin-top:12px; line-height:1.6; }
 </style>
 </head>
 <body>
@@ -166,6 +176,32 @@
   </a>
 
 </div>
+
+  <section class="install-help">
+    <h2 class="ih-title">📲 Installer l'application</h2>
+    <div class="ih-grid">
+
+      <div class="ih-card">
+        <div class="ih-os">🤖 Android</div>
+        <ol>
+          <li>Ouvrez ce site avec <b>Chrome</b> (l'installation ne marche pas avec Firefox).</li>
+          <li>Touchez le menu <b>⋮</b> en haut à droite.</li>
+          <li>Choisissez <b>« Installer l'application »</b> (ou « Ajouter à l'écran d'accueil »).</li>
+        </ol>
+      </div>
+
+      <div class="ih-card">
+        <div class="ih-os">🍏 iPhone / iPad</div>
+        <ol>
+          <li>Ouvrez ce site avec <b>Safari</b>.</li>
+          <li>Touchez le bouton <b>Partager</b> (le carré avec une flèche ↑).</li>
+          <li>Faites défiler et choisissez <b>« Sur l'écran d'accueil »</b>.</li>
+        </ol>
+      </div>
+
+    </div>
+    <p class="ih-note">Une fois installée, l'appli s'ouvre en plein écran, comme une vraie application.</p>
+  </section>
 
 <footer>
   Les données sont enregistrées localement sur votre appareil.<br>
