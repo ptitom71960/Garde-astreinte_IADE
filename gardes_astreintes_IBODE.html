@@ -607,8 +607,8 @@ function renderGardeSegs() {
     return `
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;">
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:${preview?'10px':'0'}">
-        <div class="field"><label>Début travail</label><input type="time" value="${s.debut}" oninput="gardeSegs[${i}].debut=this.value;renderGardeSegs()"></div>
-        <div class="field"><label>Fin travail</label><input type="time" value="${s.fin}" oninput="gardeSegs[${i}].fin=this.value;renderGardeSegs()"></div>
+        <div class="field"><label>Début travail</label><input type="time" value="${s.debut}" onchange="gardeSegs[${i}].debut=this.value;renderGardeSegs()"></div>
+        <div class="field"><label>Fin travail</label><input type="time" value="${s.fin}" onchange="gardeSegs[${i}].fin=this.value;renderGardeSegs()"></div>
         <div class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:9px;">
           <button class="btn-seg-del" onclick="gardeSegs.splice(${i},1);renderGardeSegs()">✕</button>
         </div>
@@ -635,8 +635,8 @@ function renderAstrSegs() {
     return `
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;">
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:${preview?'10px':'0'}">
-        <div class="field"><label>Début intervention</label><input type="time" value="${s.debut}" oninput="astrSegs[${i}].debut=this.value;renderAstrSegs()"></div>
-        <div class="field"><label>Fin intervention</label><input type="time" value="${s.fin}" oninput="astrSegs[${i}].fin=this.value;renderAstrSegs()"></div>
+        <div class="field"><label>Début intervention</label><input type="time" value="${s.debut}" onchange="astrSegs[${i}].debut=this.value;renderAstrSegs()"></div>
+        <div class="field"><label>Fin intervention</label><input type="time" value="${s.fin}" onchange="astrSegs[${i}].fin=this.value;renderAstrSegs()"></div>
         <div class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:9px;">
           <button class="btn-seg-del" onclick="astrSegs.splice(${i},1);renderAstrSegs()">✕</button>
         </div>
